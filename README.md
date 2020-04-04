@@ -6,6 +6,8 @@ AOstar(AO*) algorithm based on networkx.
 
 python版本aostar(AO*)算法实现，基于networkx。
 
+AO*算法的提出：N.J. Nilsson, Principles of Artiﬁcial Intelligence, Tioga Publishing, Palo Alto, CA, 1980.
+
 特点：
 1. 支持多个与边
 
