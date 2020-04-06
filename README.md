@@ -11,7 +11,20 @@ AO*算法的提出：N.J. Nilsson, Principles of Artiﬁcial Intelligence, Tioga
 特点：
 1. 支持多个与边
 
+## 文件说明
+
+- ao.py: fork其他人的实现，有问题不支持多个与边
+- aostar.py: 算法及样例
+- preprocessing.py: 可达性测试算法及样例
+
+## TODO
+
+- LAO*，小循环策略迭代算法
+- 启发函数单调性
+
 ## 参考链接
+
+详细参考references文件夹
 
 https://blog.csdn.net/qwezhaohaihong/article/details/103398689
 
