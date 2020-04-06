@@ -40,26 +40,30 @@ for node in allcouplings:
 
 G = DG.copy()
 
-is_True = {}
+visited = {}
+visiting = {}
 
 for goalNode in goalNodes:
     G.nodes[goalNode]['solved'] = True
 
+
 # 如果所有子节点都访问过了，
 def dfs(node):
+    visiting[node] = True
+    # 遍历每个连接符
     for coupling in G.nodes[node]['couplings']:
         bool_list = []
+        # 每个连接符的每个结点，如果
         for each_node in coupling:
             # if each_node not in visited:
-            if each_node not in is_True:
+            if each_node not in visited and each_node not in visiting:
                 dfs(each_node)
-                bool_list.append(G.nodes[each_node]['solved'])
-            else:
-                bool_list.append(True)
+            bool_list.append(G.nodes[each_node]['solved'])
         if reduce(lambda x, y: x and y, bool_list):
             G.nodes[node]['solved'] = True
-        if G.nodes[node]['solved']:
-            is_True[node] = True
+            break
+    visited[node] = G.nodes[node]['solved']
+    del visiting[node]
 
 dfs("n0")
 
