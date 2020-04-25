@@ -1,5 +1,6 @@
 import networkx as nx
 from functools import reduce
+import numpy as np
 
 # 结点node需要标记solved,cost和连接符coupling
 # 问题1：and关系标记在哪？
@@ -96,57 +97,83 @@ while not solved(g, startNode):
     nodeList = list(DG.neighbors(n))
     addToG(n, nodeList)
 
-    # 7. 含n的单一结点集合
-    s = [n]
+    # 策略迭代 算法开始
 
-    # 8.9. 内层循环，直到s为空
-    while s:
-        # 10. remove(m, s)移除后裔不出现在s中的结点m
-        # m的选择，此处可能有坑，原坑已修改，不清楚有没有新坑
-        for i in s:
-            flag = True
-            for j in list(g.neighbors(i)):
-                if j not in s:
-                    flag = flag and True
-                else:
-                    flag = flag and False
-            if flag:
-                m = s.pop(s.index(i))
+    # 被扩展结点n极其祖先集合z
+    z = [n] + list(gprime.predecessors(n))
+
+    # 迭代计数
+    iteration = 0
+
+    # 使用当前mark边和默认第一条边初始化策略
+    policy = {}
+    for s in z:
+        find_policy_flag = False
+        for index, coupling in enumerate(DG.nodes[s]["couplings"]):
+            if find_policy_flag:
                 break
-            # if i not in list(g.neighbors(i)):
-            #     m = s.pop(s.index(i))
-            #     break
+            for node in coupling:
+                if g.edges[s, node]['marked']:
+                    policy[s] = index
+                    find_policy_flag = True
+                    break
+        if not find_policy_flag:
+            policy[s] = 0
 
-        # 11. 计算连接符的耗散值
-        q = {}
-        for index, coupling in enumerate(DG.nodes[m]["couplings"]):
-             q[index] = len(coupling) + sum(costs[x] for x in coupling)
-        mincoupling = min(q, key=q.get)
+    # 使用当前启发函数值初始化价值
+    while True:
+        iteration += 1
 
-        # 11. marked最小耗散值的连接符
-        bool_list = []
-        for i in DG.nodes[m]["couplings"][mincoupling]:
-            g.edges[m, i]['marked'] = True
-            bool_list.append(g.nodes[i]['solved'])
-            # 删除其他marked
-            # 此处可能有坑，会多标记一条边，但是原算法是这么做的，也会有多的这个标记
-            # 怎么理解：如果以前的标记情况与此不同，则抹掉以前的标记
-            for j in list(g.neighbors(m)):
-                if j != i and j not in DG.nodes[m]["couplings"][mincoupling]:
-                    g.edges[m, j]['marked'] = False
-                    # for a in list(g.neighbors(j)):
-                    #     g.edges[j, a]['marked'] = False
+        # policy evaluation step
+        # 策略评估步骤
+        # while True:
+        #     biggest_change = 0
+        #     for 每一个状态 in z:
+        #         计算该策略下，状态的价值
+        #         计算价值改变量biggest_change
+        #     if biggest_change < 1e-3:
+        #         break
+        while True:
+            biggest_change = 0
+            # todo policy(s) exist if it's not a terminal state
+            for s in z:
+                old_cost = costs[s]
+                costs[s] = len(DG.nodes[s]["couplings"][policy[s]]) + sum(costs[x] for x in DG.nodes[s]["couplings"][policy[s]])
+                biggest_change = max(biggest_change, np.abs(old_cost - costs[s]))
+            if biggest_change < 1e-3:
+                break
 
-        # 如果子节点可解，当前节点也可解
-        if reduce(lambda x, y: x and y, bool_list):
-            g.nodes[m]['solved'] = True
+        # 策略提升步骤
+        # is_policy_converged = True
+        # for 每一个状态 in z:
+        #     for a（每一个动作） in actions:
+        #         计算保留具有最小价值的动作
+        #     更新该状态的策略
+        #     if 策略改变:
+        #         # 继续循环
+        #         is_policy_converged = False
+        #
+        # # 如果策略不改变，跳出迭代
+        # if is_policy_converged:
+        #     break
+        is_policy_converged = True
+        for s in z:
+            old_policy = policy[s]
+            best_cost = float('inf')
+            q = {}
+            for index, coupling in enumerate(DG.nodes[s]["couplings"]):
+                q[index] = len(coupling) + sum(costs[x] for x in coupling)
+            policy[s] = min(q, key=q.get)
+            if old_policy != policy[s]:
+                is_policy_converged = False
 
-        # 12. 如果当前节点可解或当前节点耗散值更新，更新耗散值，并添加父节点到s
-        if solved(g, m) or costs[m] != q[mincoupling]:
-            costs[m] = q[mincoupling]
-            for i in list(g.predecessors(m)):
-                if i not in s:
-                    s.append(i)
+        if is_policy_converged:
+            break
+
+    # 标记最优选择的边
+    # for s in z:
+
+    print("ok")
 
 # 算法结果获取
 # 别人的思想按边获取，但是会获取到多标记的一些边
